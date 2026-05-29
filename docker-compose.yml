@@ -1,0 +1,77 @@
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: parent_teacher_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-parent_teacher_portal}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_USER: ${DB_USERNAME:-root}
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+    volumes:
+      - dbdata:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - app-network
+
+  # PHP-FPM Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: parent_teacher_backend
+    restart: unless-stopped
+    volumes:
+      - ./backend:/var/www
+      # Exclude vendor directory from volume so it uses the one built in the image (or handles local updates)
+      # - /var/www/vendor
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-parent_teacher_portal}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  # Nginx Web Server for Backend
+  web:
+    image: nginx:alpine
+    container_name: parent_teacher_web
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/var/www
+      - ./backend/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  # Frontend React/Vite application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: parent_teacher_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - web
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  dbdata:
