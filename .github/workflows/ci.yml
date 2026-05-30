@@ -99,7 +99,7 @@ jobs:
         with:
           context: ./backend
           push: true
-          tags: parent-teacher-app-backend:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/parent-teacher-app-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -109,6 +109,6 @@ jobs:
         with:
           context: ./frontend
           push: true
-          tags: parent-teacher-app-frontend:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/parent-teacher-app-frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
